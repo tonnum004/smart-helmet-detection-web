@@ -86,58 +86,75 @@ def detect_image(data: bytes):
 def process_video(path, conf, progress):
     cap = cv2.VideoCapture(path)
     fps = cap.get(cv2.CAP_PROP_FPS) or 0
-    total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+    if not 0 < fps <= 120:
+        fps = 30  # บางไฟล์ (เช่น WebM) รายงาน fps ผิด ใช้ timestamp ของเฟรมแทน
+    total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)  # บางไฟล์ไม่บอกจำนวนเฟรม (0 หรือติดลบ)
     w, h = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    if fps <= 0 or total <= 0:
+    if w <= 0 or h <= 0:
+        cap.release()
         raise ValueError('อ่านไฟล์วิดีโอไม่ได้ (แนะนำ MP4/H.264)')
-    if total / fps > MAX_VIDEO_S:
+    if total > 0 and total / fps > MAX_VIDEO_S:
+        cap.release()
         raise ValueError(f'วิดีโอยาว {total / fps:.0f} วินาที เกินที่รองรับ ({MAX_VIDEO_S} วินาที)')
 
     # โมเดลใหม่ต่อวิดีโอ: tracker เก็บ state ไว้ในโมเดล ถ้าใช้ร่วมกันผู้ใช้หลายคนจะปนกัน
     model = YOLO(MODEL_PATH)
-    stride = max(1, round(fps / SAMPLE_FPS))
     raw = path + '.raw.mp4'
     writer = cv2.VideoWriter(raw, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
     tracks = defaultdict(lambda: {'confs': [], 'cls': Counter(), 't0': None, 't1': None})
     per_second = Counter()
-    current, i, n, start = [], 0, 0, time.perf_counter()
-    while True:
-        ok, frame = cap.read()
-        if not ok:
-            break
-        t = i / fps
-        if i % stride == 0:
-            r = model.track(frame, conf=conf, imgsz=640, persist=True, tracker='bytetrack.yaml', verbose=False)[0]
-            n += 1
-            current = [d for d in to_dets(r, model.names) if 'id' in d]
-            for d in current:
-                tr = tracks[d['id']]
-                tr['confs'].append(d['conf'])
-                tr['cls'][d['cls']] += 1
-                tr['t0'] = t if tr['t0'] is None else tr['t0']
-                tr['t1'] = t
-            per_second[int(t)] = max(per_second[int(t)], len(current))
-        writer.write(draw(frame, current))
-        i += 1
-        if i % 15 == 0:
-            progress.progress(min(i / total, 1.0), text=f'กำลังประมวลผล… {i}/{total} เฟรม')
-    cap.release()
-    writer.release()
+    current, i, n, t, next_t, start = [], 0, 0, 0.0, 0.0, time.perf_counter()
+    try:
+        while True:
+            ok, frame = cap.read()
+            if not ok:
+                break
+            t = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000 or i / fps
+            if t > MAX_VIDEO_S:
+                raise ValueError(f'วิดีโอยาวเกินที่รองรับ ({MAX_VIDEO_S} วินาที)')
+            if t >= next_t:  # ตรวจ ~SAMPLE_FPS เฟรม/วินาที
+                next_t = t + 1 / SAMPLE_FPS
+                r = model.track(frame, conf=conf, imgsz=640, persist=True, tracker='bytetrack.yaml', verbose=False)[0]
+                n += 1
+                current = [d for d in to_dets(r, model.names) if 'id' in d]
+                for d in current:
+                    tr = tracks[d['id']]
+                    tr['confs'].append(d['conf'])
+                    tr['cls'][d['cls']] += 1
+                    tr['t0'] = t if tr['t0'] is None else tr['t0']
+                    tr['t1'] = t
+                per_second[int(t)] = max(per_second[int(t)], len(current))
+            writer.write(draw(frame, current))
+            i += 1
+            if i % 15 == 0:
+                if total > 0:
+                    progress.progress(min(i / total, 1.0), text=f'กำลังประมวลผล… {i}/{total} เฟรม')
+                else:
+                    progress.progress(0.5, text=f'กำลังประมวลผล… {i} เฟรม')
+    finally:
+        cap.release()
+        writer.release()
     elapsed = time.perf_counter() - start
+    if i == 0:
+        os.remove(raw)
+        raise ValueError('อ่านไฟล์วิดีโอไม่ได้ (แนะนำ MP4/H.264)')
 
     # mp4v เล่นในเบราว์เซอร์ไม่ได้ แปลงเป็น H.264
     out = path + '.out.mp4'
-    subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), '-y', '-loglevel', 'error', '-i', raw,
-                    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], check=True)
-    os.remove(raw)
-    video = Path(out).read_bytes()
-    os.remove(out)
+    try:
+        subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), '-y', '-loglevel', 'error', '-i', raw,
+                        '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], check=True)
+        video = Path(out).read_bytes()
+    finally:
+        for f in (raw, out):
+            if os.path.exists(f):
+                os.remove(f)
 
     rows = [{'id': tid, 'cls': tr['cls'].most_common(1)[0][0], 'conf': sum(tr['confs']) / len(tr['confs']),
              't0': tr['t0'], 't1': tr['t1']} for tid, tr in tracks.items()]
-    timeline = pd.DataFrame({'จำนวนคน': [per_second[s] for s in range(int(total / fps) + 1)]})
+    timeline = pd.DataFrame({'จำนวนคน': [per_second[s] for s in range(int(t) + 1)]})
     return {'video': video, 'tracks': rows, 'timeline': timeline, 'fps': n / elapsed if elapsed else 0,
-            'duration': total / fps}
+            'duration': t}
 
 
 def fmt_time(s):
