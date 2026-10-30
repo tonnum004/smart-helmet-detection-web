@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Helmet Detection</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"></span>
+      <div>
+        <h1 id="title">Smart Helmet Detection</h1>
+        <p id="subtitle"></p>
+      </div>
+    </div>
+    <span class="badge" title="ยังไม่ได้เชื่อมต่อโมเดล ผลลัพธ์ทั้งหมดเป็นข้อมูลจำลอง">Demo mode · ผลลัพธ์จำลอง</span>
+  </header>
+
+  <main class="layout">
+    <section class="panel controls" aria-label="ตั้งค่าและนำเข้าข้อมูล">
+      <div class="step">
+        <h2>นำเข้าข้อมูล</h2>
+        <div class="seg" role="group" aria-label="ประเภทข้อมูล">
+          <button type="button" data-mode="image" aria-pressed="true">รูปภาพ</button>
+          <button type="button" data-mode="video" aria-pressed="false">วิดีโอ</button>
+        </div>
+        <button type="button" class="drop" id="drop">
+          <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M12 16V4m0 0-4.5 4.5M12 4l4.5 4.5M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="drop-title">ลากไฟล์มาวาง หรือคลิกเพื่อเลือก</span>
+          <span class="drop-hint" id="drop-hint">JPG, PNG, WEBP</span>
+        </button>
+        <input type="file" id="file" accept="image/*" hidden>
+        <div class="file-info" id="file-info" hidden>
+          <span class="file-name" id="file-name"></span>
+          <span class="file-size" id="file-size"></span>
+          <button type="button" class="link" id="remove">ลบ</button>
+        </div>
+        <p class="error" id="error" role="alert" hidden></p>
+      </div>
+
+      <button type="button" class="run" id="run" disabled>เริ่มประมวลผล</button>
+
+      <details class="advanced">
+        <summary>ตั้งค่าขั้นสูง</summary>
+        <div class="field">
+          <label for="conf">Confidence threshold</label>
+          <output id="conf-out" for="conf">0.50</output>
+        </div>
+        <input type="range" id="conf" min="0.05" max="0.95" step="0.05" value="0.5">
+        <label class="check"><input type="checkbox" id="show-boxes" checked> แสดง Bounding Box</label>
+      </details>
+    </section>
+
+    <section class="output" aria-label="ผลลัพธ์">
+      <div class="panel viewer-wrap">
+        <div class="viewer" id="viewer">
+          <p class="empty" id="empty">ยังไม่มีข้อมูล<br><span>อัปโหลดรูปหรือวิดีโอทางซ้ายเพื่อเริ่ม</span></p>
+          <div class="stage" id="stage" hidden>
+            <img id="img" alt="ภาพที่อัปโหลด" hidden>
+            <video id="vid" controls playsinline muted hidden></video>
+            <canvas id="overlay" aria-hidden="true"></canvas>
+          </div>
+          <div class="loading" id="loading" hidden>
+            <div class="progress"><span id="progress"></span></div>
+            <p>กำลังประมวลผล…</p>
+          </div>
+        </div>
+        <div class="viewer-bar" id="viewer-bar" hidden>
+          <span id="viewer-meta"></span>
+          <button type="button" class="ghost" id="download">ดาวน์โหลดผลลัพธ์</button>
+        </div>
+      </div>
+
+      <div class="panel results" id="results" hidden>
+        <div class="results-head">
+          <h2>ผลการตรวจจับ</h2>
+          <span class="tag">ข้อมูลจำลอง</span>
+        </div>
+        <div class="cards" id="cards"></div>
+        <div class="split">
+          <div>
+            <h3>จำนวนต่อคลาส</h3>
+            <div class="bars" id="bars"></div>
+          </div>
+          <div id="timeline-wrap" hidden>
+            <h3>จำนวนวัตถุตามเวลา <span class="hint">คลิกเพื่อข้ามไปยังช่วงนั้น</span></h3>
+            <svg id="timeline" viewBox="0 0 600 140" preserveAspectRatio="none" role="img" aria-label="กราฟจำนวนวัตถุตามเวลา"></svg>
+          </div>
+        </div>
+        <h3>รายการที่ตรวจพบ</h3>
+        <div class="table-wrap">
+          <table>
+            <thead id="thead"></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>Image Processing and Computer Vision · Project</footer>
+  <script src="app.js"></script>
+</body>
+</html>
