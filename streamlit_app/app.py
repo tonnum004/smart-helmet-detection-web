@@ -43,8 +43,9 @@ def draw(frame, dets):
         label = f"{'#%d ' % d['id'] if 'id' in d else ''}{d['cls']} {d['conf']:.2f}"
         (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, scale, max(1, t // 2))
         ly = y1 - th - 2 * t if y1 - th - 2 * t > 0 else y1
-        cv2.rectangle(frame, (x1, ly), (x1 + tw + 2 * t, ly + th + 2 * t), color, -1)
-        cv2.putText(frame, label, (x1 + t, ly + th + t), cv2.FONT_HERSHEY_SIMPLEX, scale,
+        lx = max(0, min(x1, frame.shape[1] - tw - 2 * t))  # ไม่ให้ป้ายล้นขอบขวา
+        cv2.rectangle(frame, (lx, ly), (lx + tw + 2 * t, ly + th + 2 * t), color, -1)
+        cv2.putText(frame, label, (lx + t, ly + th + t), cv2.FONT_HERSHEY_SIMPLEX, scale,
                     (255, 255, 255), max(1, t // 2), cv2.LINE_AA)
     return frame
 
@@ -170,7 +171,8 @@ st.caption('ระบบตรวจจับการสวมหมวกก�
 with st.sidebar:
     mode = st.radio('ประเภทข้อมูล', ['รูปภาพ', 'วิดีโอ'], horizontal=True)
     with st.expander('ตั้งค่าขั้นสูง'):
-        conf = st.slider('Confidence threshold', 0.05, 0.95, 0.5, 0.05)
+        # 0.3 = ค่าที่ F1 สูงสุดบน valid set (0.285)
+        conf = st.slider('Confidence threshold', 0.05, 0.95, 0.3, 0.05)
     st.divider()
     st.caption('โมเดล: YOLO11n · mAP50 0.912 (test set 149 รูป)\n\nคลาส: With Helmet, Without Helmet')
 

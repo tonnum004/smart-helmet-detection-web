@@ -104,10 +104,11 @@ function drawBoxes(ctx, rect, boxes, scale = 1) {
     const pad = 4 * scale, th = 16 * scale;
     const tw = ctx.measureText(text).width + pad * 2;
     const ly = y - th < rect.y ? y : y - th;
+    const lx = Math.max(rect.x, Math.min(x, rect.x + rect.w - tw)); // ไม่ให้ป้ายล้นขอบขวา
     ctx.fillStyle = color;
-    ctx.fillRect(x, ly, tw, th);
+    ctx.fillRect(lx, ly, tw, th);
     ctx.fillStyle = '#fff';
-    ctx.fillText(text, x + pad, ly + 2 * scale);
+    ctx.fillText(text, lx + pad, ly + 2 * scale);
   }
 }
 
