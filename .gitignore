@@ -1,1 +1,4 @@
 .vercel
+training/datasets/
+training/runs/
+yolo11*.pt
