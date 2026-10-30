@@ -17,3 +17,7 @@ npx serve .
 ```
 
 push เข้า `main` แล้ว Vercel จะ deploy ให้อัตโนมัติ
+
+## Train โมเดล
+
+เปิด notebook ใน Colab: [training/train_helmet.ipynb](https://colab.research.google.com/github/tonnum004/smart-helmet-detection-web/blob/main/training/train_helmet.ipynb)
