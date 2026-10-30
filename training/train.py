@@ -12,7 +12,6 @@ import argparse
 import os
 import shutil
 import sys
-from getpass import getpass
 from pathlib import Path
 
 # เก็บ dataset/ผล train นอก repo: ไม่ขึ้น git และไม่หายถ้าย้าย/ลบโฟลเดอร์โปรเจกต์
@@ -41,7 +40,7 @@ def download_dataset():
         return DATA_DIR / 'data.yaml'
     from roboflow import Roboflow
     # Private API Key จาก roboflow.com → Settings → API Keys (หรือตั้ง env ROBOFLOW_API_KEY)
-    key = os.environ.get('ROBOFLOW_API_KEY') or getpass('Roboflow API key: ')
+    key = os.environ.get('ROBOFLOW_API_KEY') or input('Roboflow API key (วางแล้วกด Enter): ').strip()
     project = Roboflow(api_key=key).workspace('learning-evidence').project('helmet-detection_yolov8')
     project.version(3).download('yolov11', location=str(DATA_DIR))
     return DATA_DIR / 'data.yaml'
