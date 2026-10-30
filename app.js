@@ -6,6 +6,8 @@ const CONFIG = {
     { name: 'With Helmet', color: '#16a34a' },
     { name: 'Without Helmet', color: '#dc2626' },
   ],
+  // ทดสอบกับ API ในเครื่องได้ด้วย ?api=http://localhost:7860
+  apiUrl: new URLSearchParams(location.search).get('api') || 'http://localhost:7860',
 };
 
 const MODES = {
@@ -30,59 +32,44 @@ const state = { mode: 'image', file: null, url: null, result: null, busy: false 
 const classColor = Object.fromEntries(CONFIG.classes.map((c) => [c.name, c.color]));
 const media = () => (state.mode === 'image' ? el.img : el.vid);
 const threshold = () => Number(el.conf.value);
-const rand = (a, b) => a + Math.random() * (b - a);
-const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const fmtTime = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const fmtSize = (b) => (b > 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.ceil(b / 1e3)} KB`);
 
-/* ---------- mock model ---------- */
+/* ---------- model API ---------- */
 
-// shortcut: ผลลัพธ์จำลองทั้งหมด — ตอนเชื่อมโมเดลจริงให้แทนฟังก์ชันนี้ด้วย fetch ไปยัง API (เช่น FastAPI + YOLO11) แล้วคืนค่ารูปแบบเดียวกัน
-async function detect(mode, mediaEl) {
-  await fakeProgress(mode === 'image' ? 900 : 1800);
-  const randomBox = () => {
-    const w = rand(0.07, 0.28);
-    const h = clamp(w * rand(0.6, 1.5), 0.06, 0.5);
-    return { w, h, x: rand(0, 1 - w), y: rand(0, 1 - h) };
-  };
-  const cls = () => pick(CONFIG.classes).name;
-
-  if (mode === 'image') {
-    const dets = Array.from({ length: Math.round(rand(4, 11)) }, () => ({
-      cls: cls(), conf: rand(0.25, 0.98), ...randomBox(),
-    }));
-    return { kind: 'image', dets, ms: Math.round(rand(35, 120)) };
+async function detect(mode, file) {
+  const body = new FormData();
+  body.append('file', file);
+  let res;
+  try {
+    res = await fetch(`${CONFIG.apiUrl}/predict/${mode}`, { method: 'POST', body });
+  } catch {
+    throw new Error('เชื่อมต่อเซิร์ฟเวอร์โมเดลไม่ได้ ถ้าเพิ่งเปิดใช้ครั้งแรก รอประมาณ 1 นาทีแล้วลองใหม่');
   }
-
-  const duration = Number.isFinite(mediaEl.duration) && mediaEl.duration > 0 ? mediaEl.duration : 10;
-  const tracks = Array.from({ length: Math.round(rand(6, 16)) }, (_, i) => {
-    const t0 = rand(0, duration * 0.85);
-    return {
-      id: i + 1, cls: cls(), conf: rand(0.25, 0.97), ...randomBox(),
-      t0, t1: Math.min(duration, t0 + rand(1.5, Math.max(2, duration * 0.5))),
-      vx: rand(-0.12, 0.12), vy: rand(-0.04, 0.04),
-    };
-  });
-  return { kind: 'video', tracks, duration, fps: rand(18, 32) };
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || `เซิร์ฟเวอร์ตอบกลับผิดพลาด (${res.status})`);
+  return data;
 }
 
-function fakeProgress(ms) {
-  return new Promise((resolve) => {
-    const start = Date.now();
-    const id = setInterval(() => {
-      const p = Math.min(1, (Date.now() - start) / ms);
-      el.progress.style.width = `${p * 100}%`;
-      if (p === 1) { clearInterval(id); resolve(); }
-    }, 30);
-  });
+// ไม่รู้เวลาจริง: ค่อยๆ เข้าใกล้ 90% จนกว่าจะได้ผล
+function startProgress() {
+  let p = 0;
+  el.progress.style.width = '0%';
+  const id = setInterval(() => { p += (0.9 - p) * 0.04; el.progress.style.width = `${p * 100}%`; }, 100);
+  return () => { clearInterval(id); el.progress.style.width = '100%'; };
 }
 
-// ตำแหน่งกล่องของ track ณ เวลา t (null ถ้าไม่อยู่ในเฟรม)
+// กล่องของ track ณ เวลา t จากเฟรมที่ตรวจล่าสุดก่อน t (null ถ้าไม่อยู่ในเฟรม)
 function trackAt(tr, t) {
-  if (t < tr.t0 || t > tr.t1) return null;
-  const dt = t - tr.t0;
-  return { ...tr, x: clamp(tr.x + tr.vx * dt, 0, 1 - tr.w), y: clamp(tr.y + tr.vy * dt, 0, 1 - tr.h) };
+  if (t < tr.t0 || t > tr.t1 + 0.2) return null;
+  let b = null;
+  for (const s of tr.boxes) {
+    if (s[0] > t) break;
+    b = s;
+  }
+  if (!b || t - b[0] > 0.5) return null;
+  return { ...tr, x: b[1], y: b[2], w: b[3], h: b[4] };
 }
 
 function visible() {
@@ -294,17 +281,26 @@ async function run() {
   el.run.disabled = true;
   el.loading.hidden = false;
   if (state.mode === 'video') el.vid.pause();
+  showError('');
+  const file = state.file;
+  const done = startProgress();
+  let result = null;
   try {
-    state.result = await detect(state.mode, media());
+    result = await detect(state.mode, file);
+  } catch (err) {
+    showError(err.message);
   } finally {
+    done();
     state.busy = false;
     el.loading.hidden = true;
     el.run.disabled = !state.file;
     el.run.textContent = 'ประมวลผลใหม่';
   }
+  if (state.file !== file) return; // ผู้ใช้เปลี่ยน/ลบไฟล์ระหว่างรอ
+  state.result = result;
   renderResults();
   drawOverlay();
-  if (state.mode === 'video') { el.vid.currentTime = 0; el.vid.play().catch(() => {}); }
+  if (result && state.mode === 'video') { el.vid.currentTime = 0; el.vid.play().catch(() => {}); }
 }
 
 function download() {
