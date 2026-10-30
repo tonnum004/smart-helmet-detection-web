@@ -15,9 +15,10 @@ import sys
 from getpass import getpass
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
-DATA_DIR = HERE / 'datasets' / 'helmet-detection_yolov8-3'
-RUNS_DIR = HERE / 'runs'
+# เก็บ dataset/ผล train นอก repo: ไม่ขึ้น git และไม่หายถ้าย้าย/ลบโฟลเดอร์โปรเจกต์
+WORK = Path.home() / 'helmet-detection'
+DATA_DIR = WORK / 'datasets' / 'helmet-detection_yolov8-3'
+RUNS_DIR = WORK / 'runs'
 
 
 def check_gpu():
@@ -57,6 +58,8 @@ def main():
     args = ap.parse_args()
 
     check_gpu()
+    WORK.mkdir(exist_ok=True)
+    os.chdir(WORK)  # yolo11n.pt ที่ดาวน์โหลดจะลงที่นี่ด้วย
     data_yaml = download_dataset()
 
     from ultralytics import YOLO
@@ -86,8 +89,8 @@ def main():
     for i, c in enumerate(m.box.ap_class_index):
         print(f'{best.names[int(c)]:15s} AP50 = {m.box.ap50[i]:.3f}')
 
-    shutil.copy(run / 'weights' / 'best.pt', HERE / 'best.pt')
-    print(f'\nโมเดล: {HERE / "best.pt"}')
+    shutil.copy(run / 'weights' / 'best.pt', WORK / 'best.pt')
+    print(f'\nโมเดล: {WORK / "best.pt"}')
     print(f'กราฟ (results.png, confusion_matrix.png, F1 curve): {run}')
 
 

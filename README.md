@@ -35,4 +35,4 @@ pip install -r training/requirements.txt notebook
 python training/train.py
 ```
 
-ได้ `training/best.pt` และกราฟใน `training/runs/yolo11n/` · ถ้าเจอ `CUDA out of memory` ใช้ `--batch 8`
+ได้ `~/helmet-detection/best.pt` และกราฟใน `~/helmet-detection/runs/yolo11n/` · ถ้าเจอ `CUDA out of memory` ใช้ `--batch 8`
