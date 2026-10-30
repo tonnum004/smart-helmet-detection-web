@@ -1,0 +1,19 @@
+# Smart Helmet Detection — Web UI
+
+เว็บสำหรับตรวจจับการสวมหมวกกันน็อคจากรูปภาพและวิดีโอ (วิชา Image Processing and Computer Vision)
+
+Live: https://cv-web-theta-eight.vercel.app
+
+## สถานะ
+
+- ตอนนี้ทำแค่ UX/UI ผลการตรวจจับเป็น **ข้อมูลจำลอง**
+- ยังไม่ได้เชื่อมโมเดล: แทนฟังก์ชัน `detect()` ใน `app.js` ด้วยการเรียก API ของโมเดล (เช่น YOLO11) โดยคืนค่ารูปแบบเดิม
+- ชื่อคลาสตั้งไว้ใน `CONFIG` บนสุดของ `app.js` (`helmet`, `no_helmet`)
+
+## รันในเครื่อง
+
+```bash
+npx serve .
+```
+
+push เข้า `main` แล้ว Vercel จะ deploy ให้อัตโนมัติ
