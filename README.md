@@ -18,16 +18,18 @@ npx serve .
 
 push เข้า `main` แล้ว Vercel จะ deploy ให้อัตโนมัติ
 
-## Train โมเดล (GPU ในเครื่อง, ทดสอบกับ RTX 5060 8 GB)
+## Train โมเดล (GPU ในเครื่อง, ตั้งค่าสำหรับ RTX 5060 8 GB)
 
 ติดตั้งครั้งแรก (RTX 50 series ต้องใช้ PyTorch แบบ CUDA 12.8):
 
 ```bash
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
-pip install -r training/requirements.txt
+pip install -r training/requirements.txt notebook
 ```
 
-Train (จะขอ Roboflow API key ตอนดาวน์โหลด dataset ครั้งแรก):
+**แบบ Colab + GPU ในเครื่อง:** เปิด [training/train_helmet_local.ipynb](https://colab.research.google.com/github/tonnum004/smart-helmet-detection-web/blob/main/training/train_helmet_local.ipynb) ใน Colab แล้วทำตามขั้นตอนใน cell แรก (Connect to a local runtime)
+
+**แบบ script:** (จะขอ Roboflow API key ตอนดาวน์โหลด dataset ครั้งแรก)
 
 ```bash
 python training/train.py

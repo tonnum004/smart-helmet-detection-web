@@ -1,4 +1,4 @@
-"""Train YOLO11 สำหรับ Smart Helmet Detection บน GPU ในเครื่อง (ทดสอบกับ RTX 5060 8 GB)
+"""Train YOLO11 สำหรับ Smart Helmet Detection บน GPU ในเครื่อง (ตั้งค่าสำหรับ RTX 5060 8 GB)
 
 ใช้งาน:
     python training/train.py                     # yolo11n, 50 epochs, batch 16
