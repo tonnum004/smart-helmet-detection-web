@@ -4,6 +4,7 @@
     python training/train.py                     # yolo11n, 50 epochs, batch 16
     python training/train.py --model yolo11s.pt  # แม่นขึ้น ช้าลง
     python training/train.py --batch 8           # ถ้าเจอ CUDA out of memory
+    python training/train.py --eval-only         # ประเมินโมเดลที่ train ไว้แล้ว + อัปเดตตารางเทียบ
 
 Dataset: Helmet Detection_YOLOv8 v3 (CC BY 4.0)
 https://universe.roboflow.com/learning-evidence/helmet-detection_yolov8
@@ -12,6 +13,7 @@ import argparse
 import os
 import shutil
 import sys
+import time
 from pathlib import Path
 
 # เก็บ dataset/ผล train นอก repo: ไม่ขึ้น git และไม่หายถ้าย้าย/ลบโฟลเดอร์โปรเจกต์
@@ -54,30 +56,39 @@ def main():
     ap.add_argument('--model', default='yolo11n.pt')
     ap.add_argument('--epochs', type=int, default=50)
     ap.add_argument('--batch', type=int, default=16)
+    ap.add_argument('--patience', type=int, default=15, help='หยุดก่อนถ้าไม่ดีขึ้นติดกันกี่ epoch')
+    ap.add_argument('--eval-only', action='store_true', help='ไม่ train ใหม่ แค่ประเมินโมเดลที่ train ไว้แล้ว')
     args = ap.parse_args()
 
     check_gpu()
+    if sys.platform == 'win32':
+        # กันเครื่อง idle-sleep ระหว่าง train (ES_CONTINUOUS | ES_SYSTEM_REQUIRED) คืนค่าเองเมื่อ process จบ
+        import ctypes
+        ctypes.windll.kernel32.SetThreadExecutionState(0x80000000 | 0x00000001)
     WORK.mkdir(exist_ok=True)
     os.chdir(WORK)  # yolo11n.pt ที่ดาวน์โหลดจะลงที่นี่ด้วย
     data_yaml = download_dataset()
 
+    import pandas as pd
     from ultralytics import YOLO
     name = Path(args.model).stem
-    model = YOLO(args.model)
-    model.train(
-        data=str(data_yaml),
-        epochs=args.epochs,
-        imgsz=640,
-        batch=args.batch,
-        patience=15,      # หยุดก่อนถ้าไม่ดีขึ้น 15 epoch ติด
-        device=0,
-        workers=4,
-        project=str(RUNS_DIR),
-        name=name,
-        exist_ok=True,
-    )
-
     run = RUNS_DIR / name
+    start = time.time()
+    if not args.eval_only:
+        YOLO(args.model).train(
+            data=str(data_yaml),
+            epochs=args.epochs,
+            imgsz=640,
+            batch=args.batch,
+            patience=args.patience,
+            device=0,
+            workers=4,
+            project=str(RUNS_DIR),
+            name=name,
+            exist_ok=True,
+        )
+    train_min = (time.time() - start) / 60
+
     best = YOLO(run / 'weights' / 'best.pt')
     m = best.val(data=str(data_yaml), split='test', project=str(RUNS_DIR), name=f'{name}-test', exist_ok=True)
     print('\n=== ผลบน test set (ใส่รายงาน) ===')
@@ -88,8 +99,33 @@ def main():
     for i, c in enumerate(m.box.ap_class_index):
         print(f'{best.names[int(c)]:15s} AP50 = {m.box.ap50[i]:.3f}')
 
-    shutil.copy(run / 'weights' / 'best.pt', WORK / 'best.pt')
-    print(f'\nโมเดล: {WORK / "best.pt"}')
+    hist = pd.read_csv(run / 'results.csv')
+    hist.columns = [c.strip() for c in hist.columns]
+    f1 = m.box.f1_curve.mean(0)
+    row = {
+        'model': name,
+        'epochs_run': len(hist),
+        'best_epoch': int(hist.loc[hist['metrics/mAP50-95(B)'].idxmax(), 'epoch']),
+        'train_min': None if args.eval_only else round(train_min, 1),
+        'test_mAP50': round(m.box.map50, 3),
+        'test_mAP50-95': round(m.box.map, 3),
+        'test_precision': round(m.box.mp, 3),
+        'test_recall': round(m.box.mr, 3),
+        'best_f1': round(float(f1.max()), 3),
+        'best_f1_conf': round(float(m.box.px[int(f1.argmax())]), 3),
+        'gpu_ms_per_img': round(m.speed['inference'], 1),
+        'size_mb': round((run / 'weights' / 'best.pt').stat().st_size / 1e6, 1),
+    }
+    summary = WORK / 'results_summary.csv'
+    df = pd.read_csv(summary) if summary.exists() else pd.DataFrame(columns=list(row))
+    df = pd.concat([df[df['model'] != name], pd.DataFrame([row])], ignore_index=True)
+    df.to_csv(summary, index=False)
+    print(f'\nตารางเทียบโมเดล ({summary}):')
+    print(df.to_string(index=False))
+
+    # เก็บแยกต่อโมเดล ไม่เขียนทับกัน
+    shutil.copy(run / 'weights' / 'best.pt', WORK / f'best_{name}.pt')
+    print(f'\nโมเดล: {WORK / f"best_{name}.pt"}')
     print(f'กราฟ (results.png, confusion_matrix.png, F1 curve): {run}')
 
 
