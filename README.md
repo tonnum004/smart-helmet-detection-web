@@ -12,6 +12,16 @@ Live: https://cv-web-theta-eight.vercel.app
 - **เว็บ HTML (Vercel):** เรียก API ใน `backend/` ต้องรัน `uvicorn app:app --port 7860` ในโฟลเดอร์ `backend` บนเครื่องเดียวกัน (หรือใส่ `?api=<url>`)
 - Dataset: [Helmet Detection_YOLOv8](https://universe.roboflow.com/learning-evidence/helmet-detection_yolov8) (CC BY 4.0) คลาส `With Helmet`, `Without Helmet`
 
+## เทียบโมเดล (test set 149 รูป, RTX 5060)
+
+| โมเดล | epochs (best) | เวลา train | mAP50 | mAP50-95 | Precision | Recall | F1 สูงสุด | ms/รูป (GPU) | ขนาด |
+|---|---|---|---|---|---|---|---|---|---|
+| **yolo11n** (ใช้ในแอป) | 50 (37) | ~30 นาที | 0.912 | **0.596** | 0.852 | **0.879** | **0.870** | **3.2** | **5.5 MB** |
+| yolo11s | 50 (30) | 28 นาที | 0.896 | 0.575 | 0.846 | 0.845 | 0.848 | 7.8 | 19.2 MB |
+| yolo11m | 60 (42) | 70 นาที | **0.917** | 0.574 | **0.874** | 0.847 | 0.865 | 10.9 | 40.5 MB |
+
+โมเดลใหญ่ไม่ได้แม่นขึ้นกับ dataset ขนาดนี้ (รูปต้นฉบับ 1,737 รูป) yolo11n ให้ mAP50-95 และ F1 สูงสุด และเร็วที่สุด จึงเลือกใช้ในแอป
+
 ## รันเว็บ HTML ในเครื่อง
 
 ```bash
