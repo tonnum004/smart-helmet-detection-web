@@ -87,7 +87,8 @@ def process_video(path, conf, progress):
     cap = cv2.VideoCapture(path)
     fps = cap.get(cv2.CAP_PROP_FPS) or 0
     if not 0 < fps <= 120:
-        fps = 30  # บางไฟล์ (เช่น WebM) รายงาน fps ผิด ใช้ timestamp ของเฟรมแทน
+        # shortcut: บางไฟล์ (เช่น WebM จากเบราว์เซอร์) รายงาน fps ผิด ใช้ 30 แทน ผลการนับถูก แต่วิดีโอผลลัพธ์อาจเล่นเร็ว/ช้ากว่าจริง
+        fps = 30
     total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)  # บางไฟล์ไม่บอกจำนวนเฟรม (0 หรือติดลบ)
     w, h = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     if w <= 0 or h <= 0:
