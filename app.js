@@ -3,8 +3,8 @@ const CONFIG = {
   title: 'Smart Helmet Detection',
   subtitle: 'ระบบตรวจจับการสวมหมวกกันน็อคจากรูปภาพและวิดีโอ',
   classes: [
-    { name: 'helmet', color: '#16a34a' },
-    { name: 'no_helmet', color: '#dc2626' },
+    { name: 'With Helmet', color: '#16a34a' },
+    { name: 'Without Helmet', color: '#dc2626' },
   ],
 };
 
@@ -158,9 +158,9 @@ function renderResults() {
 
   const counts = Object.fromEntries(CONFIG.classes.map((c) => [c.name, 0]));
   items.forEach((d) => counts[d.cls]++);
-  const rate = items.length ? Math.round((counts.helmet / items.length) * 100) : 0;
+  const rate = items.length ? Math.round((counts['With Helmet'] / items.length) * 100) : 0;
   el.cards.innerHTML = card(r.kind === 'image' ? 'ผู้ขับขี่ที่ตรวจพบ' : 'ผู้ขับขี่ที่นับได้', items.length)
-    + card('ไม่สวมหมวก', counts.no_helmet) + card('อัตราการสวมหมวก', rate, '%')
+    + card('ไม่สวมหมวก', counts['Without Helmet']) + card('อัตราการสวมหมวก', rate, '%')
     + (r.kind === 'image' ? card('เวลาประมวลผล', r.ms, 'ms') : card('ความเร็วประมวลผล', r.fps.toFixed(1), 'FPS'));
 
   const max = Math.max(1, ...Object.values(counts));

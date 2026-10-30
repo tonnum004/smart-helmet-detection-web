@@ -8,7 +8,7 @@ Live: https://cv-web-theta-eight.vercel.app
 
 - ตอนนี้ทำแค่ UX/UI ผลการตรวจจับเป็น **ข้อมูลจำลอง**
 - ยังไม่ได้เชื่อมโมเดล: แทนฟังก์ชัน `detect()` ใน `app.js` ด้วยการเรียก API ของโมเดล (เช่น YOLO11) โดยคืนค่ารูปแบบเดิม
-- ชื่อคลาสตั้งไว้ใน `CONFIG` บนสุดของ `app.js` (`helmet`, `no_helmet`)
+- ชื่อคลาสตั้งไว้ใน `CONFIG` บนสุดของ `app.js` (`With Helmet`, `Without Helmet`) ตรงกับ dataset [Helmet Detection_YOLOv8](https://universe.roboflow.com/learning-evidence/helmet-detection_yolov8)
 
 ## รันในเครื่อง
 

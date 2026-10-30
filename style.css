@@ -182,7 +182,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .split:has(> [hidden]) { grid-template-columns: 1fr; }
 
 .bars { display: grid; gap: 8px; }
-.bar-row { display: grid; grid-template-columns: 92px 1fr 32px; align-items: center; gap: 10px; font-size: .85rem; }
+.bar-row { display: grid; grid-template-columns: 120px 1fr 32px; align-items: center; gap: 10px; font-size: .85rem; }
 .bar-row .name { display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dot { width: 9px; height: 9px; border-radius: 2px; flex: none; }
 .track { height: 10px; border-radius: 5px; background: var(--bg); overflow: hidden; }
