@@ -1,13 +1,3 @@
----
-title: Smart Helmet Detection API
-emoji: 🪖
-colorFrom: green
-colorTo: red
-sdk: docker
-app_port: 7860
-pinned: false
----
-
 # Smart Helmet Detection API
 
 FastAPI + YOLO11n (`best.pt`) สำหรับเว็บ https://cv-web-theta-eight.vercel.app

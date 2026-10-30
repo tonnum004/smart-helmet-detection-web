@@ -4,13 +4,15 @@
 
 Live: https://cv-web-theta-eight.vercel.app
 
-## สถานะ
+## แอป
 
-- ตอนนี้ทำแค่ UX/UI ผลการตรวจจับเป็น **ข้อมูลจำลอง**
-- ยังไม่ได้เชื่อมโมเดล: แทนฟังก์ชัน `detect()` ใน `app.js` ด้วยการเรียก API ของโมเดล (เช่น YOLO11) โดยคืนค่ารูปแบบเดิม
-- ชื่อคลาสตั้งไว้ใน `CONFIG` บนสุดของ `app.js` (`With Helmet`, `Without Helmet`) ตรงกับ dataset [Helmet Detection_YOLOv8](https://universe.roboflow.com/learning-evidence/helmet-detection_yolov8)
+- **Streamlit (หลัก):** `streamlit_app/app.py` ใช้โมเดล `backend/best.pt` (YOLO11n, mAP50 0.912 บน test set) ตรวจรูปและวิดีโอ (ByteTrack นับคน)
+  - รันในเครื่อง: `pip install -r streamlit_app/requirements.txt` แล้ว `streamlit run streamlit_app/app.py`
+  - Deploy: Streamlit Community Cloud → main file `streamlit_app/app.py`, Python 3.12
+- **เว็บ HTML (Vercel):** เรียก API ใน `backend/` ต้องรัน `uvicorn app:app --port 7860` ในโฟลเดอร์ `backend` บนเครื่องเดียวกัน (หรือใส่ `?api=<url>`)
+- Dataset: [Helmet Detection_YOLOv8](https://universe.roboflow.com/learning-evidence/helmet-detection_yolov8) (CC BY 4.0) คลาส `With Helmet`, `Without Helmet`
 
-## รันในเครื่อง
+## รันเว็บ HTML ในเครื่อง
 
 ```bash
 npx serve .
