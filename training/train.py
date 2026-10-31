@@ -56,6 +56,7 @@ def main():
     ap.add_argument('--model', default='yolo11n.pt')
     ap.add_argument('--epochs', type=int, default=50)
     ap.add_argument('--batch', type=int, default=16)
+    ap.add_argument('--imgsz', type=int, default=640)
     ap.add_argument('--patience', type=int, default=15, help='หยุดก่อนถ้าไม่ดีขึ้นติดกันกี่ epoch')
     ap.add_argument('--eval-only', action='store_true', help='ไม่ train ใหม่ แค่ประเมินโมเดลที่ train ไว้แล้ว')
     args = ap.parse_args()
@@ -71,14 +72,14 @@ def main():
 
     import pandas as pd
     from ultralytics import YOLO
-    name = Path(args.model).stem
+    name = Path(args.model).stem + ('' if args.imgsz == 640 else f'-{args.imgsz}')  # แยก run ไม่ทับของ 640
     run = RUNS_DIR / name
     start = time.time()
     if not args.eval_only:
         YOLO(args.model).train(
             data=str(data_yaml),
             epochs=args.epochs,
-            imgsz=640,
+            imgsz=args.imgsz,
             batch=args.batch,
             patience=args.patience,
             device=0,
@@ -90,7 +91,7 @@ def main():
     train_min = (time.time() - start) / 60
 
     best = YOLO(run / 'weights' / 'best.pt')
-    m = best.val(data=str(data_yaml), split='test', project=str(RUNS_DIR), name=f'{name}-test', exist_ok=True)
+    m = best.val(data=str(data_yaml), split='test', imgsz=args.imgsz, project=str(RUNS_DIR), name=f'{name}-test', exist_ok=True)
     print('\n=== ผลบน test set (ใส่รายงาน) ===')
     print(f'mAP50     : {m.box.map50:.3f}')
     print(f'mAP50-95  : {m.box.map:.3f}')
