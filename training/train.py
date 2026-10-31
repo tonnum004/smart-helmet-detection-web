@@ -57,6 +57,8 @@ def main():
     ap.add_argument('--epochs', type=int, default=50)
     ap.add_argument('--batch', type=int, default=16)
     ap.add_argument('--imgsz', type=int, default=640)
+    ap.add_argument('--data', help='data.yaml อื่น (เช่น ~/helmet-detection/datasets/data_merged.yaml)')
+    ap.add_argument('--name', help='ชื่อ run (ค่าเริ่มต้น = ชื่อโมเดล)')
     ap.add_argument('--patience', type=int, default=15, help='หยุดก่อนถ้าไม่ดีขึ้นติดกันกี่ epoch')
     ap.add_argument('--eval-only', action='store_true', help='ไม่ train ใหม่ แค่ประเมินโมเดลที่ train ไว้แล้ว')
     args = ap.parse_args()
@@ -68,11 +70,11 @@ def main():
         ctypes.windll.kernel32.SetThreadExecutionState(0x80000000 | 0x00000001)
     WORK.mkdir(exist_ok=True)
     os.chdir(WORK)  # yolo11n.pt ที่ดาวน์โหลดจะลงที่นี่ด้วย
-    data_yaml = download_dataset()
+    data_yaml = Path(args.data).expanduser() if args.data else download_dataset()
 
     import pandas as pd
     from ultralytics import YOLO
-    name = Path(args.model).stem + ('' if args.imgsz == 640 else f'-{args.imgsz}')  # แยก run ไม่ทับของ 640
+    name = args.name or Path(args.model).stem + ('' if args.imgsz == 640 else f'-{args.imgsz}')  # แยก run ไม่ทับกัน
     run = RUNS_DIR / name
     start = time.time()
     if not args.eval_only:
