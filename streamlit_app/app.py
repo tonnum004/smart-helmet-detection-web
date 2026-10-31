@@ -219,7 +219,7 @@ def fmt_time(s):
 st.html(CSS)
 st.html('<div class="hero"><div class="hero-icon">🪖</div><div><h1>Smart Helmet Detection</h1>'
         '<p>ระบบตรวจจับการสวมหมวกกันน็อคจากรูปภาพและวิดีโอ</p></div>'
-        '<span class="badge">YOLO11n · mAP50 0.912</span></div>')
+        '<span class="badge">YOLO11n · mAP50 0.933</span></div>')
 
 mode = st.segmented_control('ประเภทข้อมูล', ['รูปภาพ', 'วิดีโอ'], default='รูปภาพ',
                             label_visibility='collapsed') or 'รูปภาพ'
