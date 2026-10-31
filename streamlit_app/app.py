@@ -9,6 +9,7 @@ import time
 from collections import Counter, defaultdict
 from pathlib import Path
 
+import altair as alt
 import cv2
 import imageio_ffmpeg
 import numpy as np
@@ -26,6 +27,42 @@ MAX_VIDEO_S = 60
 SAMPLE_FPS = 5        # บน CPU ตรวจ ~5 เฟรม/วินาที แล้ววาดกรอบล่าสุดค้างไว้ในเฟรมที่ข้าม
 
 st.set_page_config(page_title='Smart Helmet Detection', page_icon='🪖', layout='wide')
+
+# shortcut: CSS อิง data-testid ภายในของ Streamlit ถ้าอัปเดต Streamlit แล้วหน้าตาเพี้ยน ให้ตรวจ selector ตรงนี้
+CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
+.stApp :is(p, h1, h2, h3, h4, label, button, input, li, td, th, div[data-testid="stMarkdownContainer"]) {
+  font-family: 'IBM Plex Sans Thai', system-ui, sans-serif;
+}
+[data-testid="stDecoration"] { display: none; }
+.block-container { max-width: 1100px; padding-top: 2rem; }
+[data-testid="stImage"] img { max-height: 70vh; object-fit: contain; }
+.hero {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 22px 26px; margin-bottom: 6px; border-radius: 16px;
+  background: linear-gradient(135deg, #0f1b3d 0%, #1f5eff 100%); color: #fff;
+}
+.hero-icon { font-size: 2.4rem; line-height: 1; }
+.hero h1 { color: #fff; font-size: 1.6rem; font-weight: 700; margin: 0; padding: 0; }
+.hero p { color: rgb(255 255 255 / .8); margin: 2px 0 0; font-size: .92rem; }
+.hero .badge {
+  margin-left: auto; padding: 5px 12px; border-radius: 999px; font-size: .8rem; font-weight: 600;
+  background: rgb(255 255 255 / .15); border: 1px solid rgb(255 255 255 / .3); white-space: nowrap;
+}
+.cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 4px 0 8px; }
+.card { background: #fff; border: 1px solid #e3e6eb; border-radius: 12px; padding: 14px 16px; }
+.card .label { font-size: .8rem; color: #5d6572; }
+.card .value { font-family: 'IBM Plex Mono', monospace; font-size: 1.7rem; font-weight: 500; line-height: 1.3; }
+.card .unit { font-size: .85rem; color: #5d6572; margin-left: 3px; font-family: 'IBM Plex Sans Thai', sans-serif; }
+.card.danger { border-color: #f4c7c7; background: #fff5f5; }
+.card.danger .value { color: #c62828; }
+.card.success { border-color: #bbe5c8; background: #f2fbf5; }
+.card.success .value { color: #15803d; }
+.empty { text-align: center; color: #5d6572; padding: 36px 16px; border: 1.5px dashed #c3c9d3; border-radius: 12px; background: #fff; }
+@media (max-width: 760px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hero .badge { margin-left: 0; } }
+</style>
+"""
 
 
 @st.cache_resource
@@ -61,16 +98,30 @@ def to_dets(r, names):
     return out
 
 
-def summary(items, count_label, speed_label, speed_value):
+def summary(items, count_label, speed_label, speed_value, speed_unit):
     counts = Counter(d['cls'] for d in items)
     n = len(items)
     rate = round(counts['With Helmet'] / n * 100) if n else 0
-    c = st.columns(4)
-    c[0].metric(count_label, n)
-    c[1].metric('ไม่สวมหมวก', counts['Without Helmet'])
-    c[2].metric('อัตราการสวมหมวก', f'{rate}%')
-    c[3].metric(speed_label, speed_value)
+    cards = [
+        ('', count_label, n, 'คน'),
+        ('danger', 'ไม่สวมหมวก', counts['Without Helmet'], 'คน'),
+        ('success', 'อัตราการสวมหมวก', rate, '%'),
+        ('', speed_label, speed_value, speed_unit),
+    ]
+    st.html('<div class="cards">' + ''.join(
+        f'<div class="card {tone}"><div class="label">{label}</div>'
+        f'<div class="value">{value}<span class="unit">{unit}</span></div></div>'
+        for tone, label, value, unit in cards) + '</div>')
     return counts
+
+
+def class_chart(counts):
+    df = pd.DataFrame({'คลาส': CLASSES, 'จำนวน': [counts[c] for c in CLASSES]})
+    return alt.Chart(df).mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6).encode(
+        x=alt.X('คลาส:N', title=None, axis=alt.Axis(labelAngle=0)),
+        y=alt.Y('จำนวน:Q', title=None, axis=alt.Axis(tickMinStep=1)),
+        color=alt.Color('คลาส:N', scale=alt.Scale(domain=CLASSES, range=['#16a34a', '#dc2626']), legend=None),
+    ).properties(height=220)
 
 
 @st.cache_data(show_spinner='กำลังตรวจจับ…', max_entries=20)
@@ -165,21 +216,23 @@ def fmt_time(s):
 
 # ---------------- UI ----------------
 
-st.title('🪖 Smart Helmet Detection')
-st.caption('ระบบตรวจจับการสวมหมวกกันน็อคจากรูปภาพและวิดีโอ · Image Processing and Computer Vision')
+st.html(CSS)
+st.html('<div class="hero"><div class="hero-icon">🪖</div><div><h1>Smart Helmet Detection</h1>'
+        '<p>ระบบตรวจจับการสวมหมวกกันน็อคจากรูปภาพและวิดีโอ</p></div>'
+        '<span class="badge">YOLO11n · mAP50 0.912</span></div>')
 
-with st.sidebar:
-    mode = st.radio('ประเภทข้อมูล', ['รูปภาพ', 'วิดีโอ'], horizontal=True)
-    with st.expander('ตั้งค่าขั้นสูง'):
-        # 0.3 = ค่าที่ F1 สูงสุดบน valid set (0.285)
-        conf = st.slider('Confidence threshold', 0.05, 0.95, 0.3, 0.05)
-    st.divider()
-    st.caption('โมเดล: YOLO11n · mAP50 0.912 (test set 149 รูป)\n\nคลาส: With Helmet, Without Helmet')
+mode = st.segmented_control('ประเภทข้อมูล', ['รูปภาพ', 'วิดีโอ'], default='รูปภาพ',
+                            label_visibility='collapsed') or 'รูปภาพ'
+with st.expander('ตั้งค่าขั้นสูง'):
+    conf = st.slider('Confidence threshold', 0.05, 0.95, 0.3, 0.05,
+                     help='0.3 = ค่าที่ F1 สูงสุดบน valid set · ค่าสูง: กรอบน้อยแต่แม่น · ค่าต่ำ: เจอครบแต่อาจผิดมากขึ้น')
+CONF_COL = {'Confidence': st.column_config.ProgressColumn('Confidence', min_value=0.0, max_value=1.0, format='%.2f')}
 
 if mode == 'รูปภาพ':
     file = st.file_uploader('อัปโหลดรูป', type=['jpg', 'jpeg', 'png', 'webp'])
     if not file:
-        st.info('อัปโหลดรูปเพื่อเริ่มตรวจจับ')
+        st.html(f'<div class="empty">อัปโหลดรูปผู้ขับขี่เพื่อเริ่มตรวจจับ<br>'
+                f'<small>JPG, PNG, WEBP · ไม่เกิน {MAX_IMAGE_MB} MB</small></div>')
         st.stop()
     if file.size > MAX_IMAGE_MB * 1024 * 1024:
         st.error(f'ไฟล์ใหญ่เกิน {MAX_IMAGE_MB} MB')
@@ -191,26 +244,31 @@ if mode == 'รูปภาพ':
     items = [d for d in dets if d['conf'] >= conf]
     result = draw(img.copy(), items)
 
-    st.image(cv2.cvtColor(result, cv2.COLOR_BGR2RGB), width='stretch')
+    tab_result, tab_orig = st.tabs(['ผลลัพธ์', 'ภาพต้นฉบับ'])
+    tab_result.image(cv2.cvtColor(result, cv2.COLOR_BGR2RGB), width='stretch')
+    tab_orig.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), width='stretch')
     ok, png = cv2.imencode('.png', result)
     st.download_button('ดาวน์โหลดผลลัพธ์ (PNG)', png.tobytes(), f'{Path(file.name).stem}_result.png', 'image/png')
 
     st.subheader('ผลการตรวจจับ')
-    counts = summary(items, 'ผู้ขับขี่ที่ตรวจพบ', 'เวลาประมวลผล (ms)', ms)
+    counts = summary(items, 'ผู้ขับขี่ที่ตรวจพบ', 'เวลาประมวลผล', ms, 'ms')
     left, right = st.columns([1, 1.4])
-    left.markdown('**จำนวนต่อคลาส**')
-    left.bar_chart(pd.DataFrame({'จำนวน': [counts[c] for c in CLASSES]}, index=CLASSES))
-    right.markdown('**รายการที่ตรวจพบ**')
-    right.dataframe(pd.DataFrame([{
-        'คลาส': d['cls'], 'Confidence': round(d['conf'], 3),
-        'x, y (px)': f"{d['xyxy'][0]}, {d['xyxy'][1]}",
-        'ขนาด (px)': f"{d['xyxy'][2] - d['xyxy'][0]} × {d['xyxy'][3] - d['xyxy'][1]}",
-    } for d in sorted(items, key=lambda d: -d['conf'])]), hide_index=True, width='stretch')
+    with left.container(border=True):
+        st.markdown('**จำนวนต่อคลาส**')
+        st.altair_chart(class_chart(counts), width='stretch')
+    with right.container(border=True):
+        st.markdown('**รายการที่ตรวจพบ**')
+        st.dataframe(pd.DataFrame([{
+            'คลาส': d['cls'], 'Confidence': d['conf'],
+            'x, y (px)': f"{d['xyxy'][0]}, {d['xyxy'][1]}",
+            'ขนาด (px)': f"{d['xyxy'][2] - d['xyxy'][0]} × {d['xyxy'][3] - d['xyxy'][1]}",
+        } for d in sorted(items, key=lambda d: -d['conf'])]), hide_index=True, width='stretch', column_config=CONF_COL)
 
 else:
     file = st.file_uploader('อัปโหลดวิดีโอ', type=['mp4', 'mov', 'webm', 'avi', 'mkv'])
     if not file:
-        st.info(f'อัปโหลดวิดีโอ (ไม่เกิน {MAX_VIDEO_MB} MB และ {MAX_VIDEO_S} วินาที) เพื่อเริ่มตรวจจับ')
+        st.html(f'<div class="empty">อัปโหลดวิดีโอเพื่อเริ่มตรวจจับ<br>'
+                f'<small>MP4, MOV, WEBM · ไม่เกิน {MAX_VIDEO_MB} MB และ {MAX_VIDEO_S} วินาที</small></div>')
         st.stop()
     if file.size > MAX_VIDEO_MB * 1024 * 1024:
         st.error(f'ไฟล์ใหญ่เกิน {MAX_VIDEO_MB} MB')
@@ -221,7 +279,7 @@ else:
         preview = st.empty()
         with preview.container():
             st.video(file)
-            if not st.button('เริ่มประมวลผล', type='primary'):
+            if not st.button('เริ่มประมวลผล', type='primary', width='stretch'):
                 st.stop()
         preview.empty()
         progress = st.progress(0.0, text='กำลังเริ่ม…')
@@ -243,14 +301,20 @@ else:
     st.download_button('ดาวน์โหลดวิดีโอผลลัพธ์', res['video'], f'{Path(file.name).stem}_result.mp4', 'video/mp4')
 
     st.subheader('ผลการตรวจจับ')
-    counts = summary(res['tracks'], 'ผู้ขับขี่ที่นับได้', 'ความเร็ว (FPS)', f"{res['fps']:.1f}")
+    counts = summary(res['tracks'], 'ผู้ขับขี่ที่นับได้', 'ความเร็วประมวลผล', f"{res['fps']:.1f}", 'FPS')
     left, right = st.columns([1, 1.4])
-    left.markdown('**จำนวนต่อคลาส**')
-    left.bar_chart(pd.DataFrame({'จำนวน': [counts[c] for c in CLASSES]}, index=CLASSES))
-    right.markdown('**จำนวนคนในเฟรมตามเวลา (วินาที)**')
-    right.bar_chart(res['timeline'])
-    st.markdown('**รายการที่ตรวจพบ**')
-    st.dataframe(pd.DataFrame([{
-        'Track ID': f"#{t['id']}", 'คลาส': t['cls'], 'Confidence': round(t['conf'], 3),
-        'พบครั้งแรก': fmt_time(t['t0']), 'พบครั้งสุดท้าย': fmt_time(t['t1']),
-    } for t in sorted(res['tracks'], key=lambda t: t['t0'])]), hide_index=True, width='stretch')
+    with left.container(border=True):
+        st.markdown('**จำนวนต่อคลาส**')
+        st.altair_chart(class_chart(counts), width='stretch')
+    with right.container(border=True):
+        st.markdown('**จำนวนคนในเฟรมตามเวลา**')
+        tl = res['timeline'].rename_axis('วินาที').reset_index()
+        st.altair_chart(alt.Chart(tl).mark_area(color='#1f5eff', opacity=0.25, line={'color': '#1f5eff'}).encode(
+            x=alt.X('วินาที:Q', title='วินาที'), y=alt.Y('จำนวนคน:Q', title=None, axis=alt.Axis(tickMinStep=1)),
+        ).properties(height=220), width='stretch')
+    with st.container(border=True):
+        st.markdown('**รายการที่ตรวจพบ**')
+        st.dataframe(pd.DataFrame([{
+            'Track ID': f"#{t['id']}", 'คลาส': t['cls'], 'Confidence': t['conf'],
+            'พบครั้งแรก': fmt_time(t['t0']), 'พบครั้งสุดท้าย': fmt_time(t['t1']),
+        } for t in sorted(res['tracks'], key=lambda t: t['t0'])]), hide_index=True, width='stretch', column_config=CONF_COL)
