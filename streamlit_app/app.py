@@ -16,7 +16,7 @@ import pandas as pd
 import streamlit as st
 from ultralytics import YOLO
 
-MODEL_PATH = Path(__file__).resolve().parent.parent / 'backend' / 'best.pt'
+MODEL_PATH = Path(__file__).with_name('best.pt')
 CLASSES = ['With Helmet', 'Without Helmet']
 COLORS = {'With Helmet': (74, 163, 22), 'Without Helmet': (38, 38, 220)}  # BGR
 MIN_CONF = 0.1        # ตรวจรูปที่ค่าต่ำแล้วค่อยกรองด้วย slider จะได้ไม่ต้องรันโมเดลใหม่

@@ -52,14 +52,13 @@ python training/train.py --model yolo11s.pt      # โมเดลอื่น
 
 - ครั้งแรกจะขอ Roboflow API key เพื่อดาวน์โหลด dataset
 - ผลลัพธ์อยู่ที่ `~/helmet-detection/`: `best_<โมเดล>.pt`, กราฟใน `runs/<โมเดล>/`, ตารางเทียบ `results_summary.csv`
-- ถ้าเจอ `CUDA out of memory` ใช้ `--batch 8` · หรือใช้ notebook `training/train_helmet_local.ipynb` ผ่าน Colab (Connect to a local runtime)
+- ถ้าเจอ `CUDA out of memory` ใช้ `--batch 8`
+- ใช้โมเดลใหม่ในแอป: copy `best_<โมเดล>.pt` ไปทับ `streamlit_app/best.pt`
 
 ## โครงสร้าง
 
 ```
-streamlit_app/   แอป Streamlit (หลัก)
-backend/         best.pt (yolo11n) + FastAPI ทางเลือก
-training/        script/notebook สำหรับ train และประเมินผล
-index.html, app.js, style.css   หน้าเว็บ HTML เวอร์ชันแรก (ต้องรัน backend/ ในเครื่อง ไม่ได้ใช้แล้ว)
+streamlit_app/   แอป Streamlit + best.pt (yolo11n)
+training/        script สำหรับ train และประเมินผล
 packages.txt     แพ็กเกจระบบสำหรับ Streamlit Cloud
 ```

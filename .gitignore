@@ -1,5 +1,1 @@
-.vercel
-training/datasets/
-training/runs/
-yolo11*.pt
 __pycache__/
