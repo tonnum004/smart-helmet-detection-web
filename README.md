@@ -9,8 +9,6 @@
 
 **ลองใช้งาน:** https://smart-helmet.streamlit.app
 
-![ตัวอย่างผลบน test set](docs/test_predictions.jpg)
-
 ## ความสามารถ
 
 - **รูปภาพ:** ตรวจจับหัวผู้ขับขี่ แยก `With Helmet` / `Without Helmet` วาดกรอบ สรุปจำนวน อัตราการสวมหมวก ตาราง และดาวน์โหลดรูปผลลัพธ์
