@@ -57,7 +57,7 @@ def main():
     ap.add_argument('--epochs', type=int, default=50)
     ap.add_argument('--batch', type=int, default=16)
     ap.add_argument('--imgsz', type=int, default=640)
-    ap.add_argument('--data', help='data.yaml อื่น (เช่น ~/helmet-detection/datasets/data_merged.yaml)')
+    ap.add_argument('--data', help='ใช้ data.yaml อื่นแทน dataset หลัก')
     ap.add_argument('--name', help='ชื่อ run (ค่าเริ่มต้น = ชื่อโมเดล)')
     ap.add_argument('--patience', type=int, default=15, help='หยุดก่อนถ้าไม่ดีขึ้นติดกันกี่ epoch')
     ap.add_argument('--eval-only', action='store_true', help='ไม่ train ใหม่ แค่ประเมินโมเดลที่ train ไว้แล้ว')
