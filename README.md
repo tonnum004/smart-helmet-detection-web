@@ -35,7 +35,7 @@
 | valid | 372 |
 | test | 149 |
 
-Preprocessing จาก Roboflow: Auto-Orient, Resize 640×640 · Augmentation: Flip, Crop, Grayscale, Hue/Saturation/Brightness, Blur
+Preprocessing จาก Roboflow: Auto-Orient, Resize 640×640 · Augmentation: Horizontal flip, Crop 0–20%, Brightness ±25%, Gaussian blur 0–2.5 px
 
 ## โมเดลและผลประเมิน (test set 149 รูป, RTX 5060)
 
