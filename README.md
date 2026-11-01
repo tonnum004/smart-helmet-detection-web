@@ -47,11 +47,6 @@ Preprocessing จาก Roboflow: Auto-Orient, Resize 640×640 · Augmentation: 
 
 โมเดลใหญ่ไม่ได้ให้ผลดีกว่าอย่างมีนัยสำคัญกับ dataset ขนาดนี้ (train ครั้งเดียวต่อโมเดล) yolo11n ให้ mAP50-95 และ F1 สูงสุด และเร็วที่สุด เหมาะกับ Streamlit Cloud ที่รันบน CPU จึงเลือกใช้ในแอป
 
-<p>
-  <img src="docs/BoxPR_curve.png" width="49%" alt="Precision-Recall curve (yolo11n, test set)">
-  <img src="docs/confusion_matrix_normalized.png" width="49%" alt="Confusion matrix (yolo11n, test set)">
-</p>
-
 ## รันแอปในเครื่อง
 
 ```bash
@@ -80,6 +75,5 @@ python training/train.py --model yolo11s.pt      # โมเดลอื่น
 ```
 streamlit_app/   แอป Streamlit + best.pt (yolo11n)
 training/        script สำหรับ train และประเมินผล
-docs/            รูปผลลัพธ์ใน README
 packages.txt     แพ็กเกจระบบสำหรับ Streamlit Cloud
 ```
