@@ -32,8 +32,8 @@ st.set_page_config(page_title='Smart Helmet Detection', page_icon=':material/spo
 # shortcut: CSS อิง data-testid ภายในของ Streamlit ถ้าอัปเดต Streamlit แล้วหน้าตาเพี้ยน ให้ตรวจ selector ตรงนี้
 CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Roboto+Mono:wght@500&family=Roboto:wght@400;500;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=block');
+/* ไอคอน .ms ใช้ฟอนต์ Material Symbols Rounded ที่ Streamlit โหลดมาให้อยู่แล้ว ไม่ต้องดึงจาก Google Fonts ซ้ำ */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500&family=Roboto+Mono:wght@500&family=Roboto:wght@400;500&display=swap');
 :root {
   --md-primary: #0b57d0; --md-on-primary: #fff; --md-primary-container: #d3e3fd; --md-on-primary-container: #041e49;
   --md-surface: #f8fafd; --md-surface-c: #ffffff; --md-surface-c-high: #f0f4f9;
