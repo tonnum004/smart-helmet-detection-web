@@ -1,0 +1,19 @@
+name: Keep Streamlit apps awake
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'  # ทุก 6 ชั่วโมง (แอปหลับเมื่อไม่มีคนเข้า 12 ชั่วโมง)
+  workflow_dispatch:         # กดรันเองได้จากแท็บ Actions
+
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install playwright && python -m playwright install --with-deps chromium
+      # เพิ่มแอปอื่นได้ โดยใส่ URL ต่อท้ายบรรทัดนี้ คั่นด้วยเว้นวรรค
+      - run: python .github/keep_awake.py https://smart-helmet.streamlit.app/
