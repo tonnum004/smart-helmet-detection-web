@@ -46,7 +46,8 @@ CSS = """
   font-family: 'Roboto', 'Noto Sans Thai', system-ui, sans-serif;
 }
 [data-testid="stDecoration"] { display: none; }
-.block-container { max-width: 1120px; padding-top: 1.75rem; padding-bottom: 4rem; }
+.block-container { max-width: 1120px; padding-top: 4.5rem; padding-bottom: 4rem; }
+[data-testid="stHeader"] { background: transparent; }
 [data-testid="stImage"] img { max-height: 70vh; object-fit: contain; border-radius: 16px; }
 [data-testid="stVideo"] video { border-radius: 16px; }
 /* กล่องอัปโหลด: ยังไม่มีไฟล์ = กล่องใหญ่ (ลากมาวาง/คลิกที่ไหนก็ได้), มีไฟล์แล้ว = แถบเล็กแสดงไฟล์ + ปุ่มลบ/เปลี่ยนของ Streamlit
@@ -60,8 +61,8 @@ CSS = """
 [data-testid="stFileUploaderDropzone"]:has([data-testid="stFileUploaderDropzoneInstructions"])::before {
   content: 'cloud_upload'; font-family: 'Material Symbols Rounded'; font-size: 56px; line-height: 1;
   color: var(--md-primary); width: 88px; height: 88px; border-radius: 50%; display: grid; place-items: center;
-  background: var(--md-primary-container); font-feature-settings: 'liga'; -webkit-font-feature-settings: 'liga'; }
-[data-testid="stFileUploaderDropzoneInstructions"] { margin: 0; order: -1; }
+  background: var(--md-primary-container); font-feature-settings: 'liga'; -webkit-font-feature-settings: 'liga'; order: -2; }
+[data-testid="stFileUploaderDropzoneInstructions"] { margin: 0; display: flex; flex-direction: column; align-items: center; order: -1; }
 [data-testid="stFileUploaderDropzoneInstructions"] > * { display: none; }
 [data-testid="stFileUploaderDropzoneInstructions"]::before { display: block; font-size: 1.1rem; font-weight: 500;
   color: var(--md-on-surface); content: 'ลากไฟล์มาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์'; }
